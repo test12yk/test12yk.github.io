@@ -155,7 +155,7 @@ function workView(id) {
 
   return `
     <figure class="art${tab === 'details' ? ' show-hotspots' : ''}" style="aspect-ratio:${w.width}/${w.height}">
-      <img src="${w.image}" alt="${esc(w.title)}" data-act="zoom">
+      <img src="${w.image}" alt="${esc(w.title)}" data-act="zoom" data-full="${w.zoom}">
       ${hotspots}
     </figure>
     ${tab === 'details' ? '<div class="hs-caption" id="hs-caption">그림 위의 번호를 눌러 보세요.</div>' : ''}
@@ -328,13 +328,18 @@ function render() {
 }
 
 // ───────── 이벤트 ─────────
-function openZoom(src, alt) {
+function openZoom(src, alt, preview = src) {
   const el = document.createElement('div');
   el.className = 'zoom';
-  el.innerHTML = `<div class="zoom-scroll"><img src="${src}" alt="${esc(alt)}"></div>
+  el.innerHTML = `<div class="zoom-scroll"><img src="${preview}" alt="${esc(alt)}"></div>
     <div class="zoom-bar"><button data-z="-">－</button><button data-z="+">＋</button><button data-z="x">닫기</button></div>`;
   let scale = 1;
   const img = el.querySelector('img');
+  if (src !== preview) {
+    const hi = new Image();
+    hi.onload = () => { img.src = src; };
+    hi.src = src; // 고해상도는 다 받아진 뒤에 바꿔 끼워서 깜빡임 없게
+  }
   el.addEventListener('click', (e) => {
     const z = e.target.dataset.z;
     if (z === 'x' || e.target === el) { el.remove(); return; }
@@ -406,7 +411,7 @@ document.addEventListener('click', (e) => {
     if (!t.classList.contains('hotspot')) document.querySelector('.art')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } else if (act === 'zoom') {
     if (session.workTab === 'details') return;
-    openZoom(t.src, t.alt);
+    openZoom(t.dataset.full || t.src, t.alt, t.src);
   } else if (act === 'tts') {
     const w = WORK_BY_ID[t.dataset.id];
     if (t.classList.toggle('playing')) {

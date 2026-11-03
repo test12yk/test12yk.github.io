@@ -1,7 +1,7 @@
 // 오프라인 캐시. 코드/콘텐츠를 바꿔서 배포할 때마다 VERSION을 올릴 것.
-const VERSION = 'v2';
+const VERSION = 'v3';
 const SHELL = `mhd-shell-${VERSION}`;
-const IMAGES = 'mhd-images-v1'; // 그림은 버전과 무관하게 유지
+const IMAGES = 'mhd-images-v2'; // 그림 파일을 같은 이름으로 교체했을 때만 올림 (v2: 고해상도로 교체)
 
 const SHELL_FILES = [
   './', 'index.html', 'privacy.html', 'css/style.css', 'manifest.webmanifest',
@@ -22,7 +22,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
     for (const key of await caches.keys()) {
-      if (key.startsWith('mhd-shell-') && key !== SHELL) await caches.delete(key);
+      if ((key.startsWith('mhd-shell-') && key !== SHELL) || (key.startsWith('mhd-images-') && key !== IMAGES)) await caches.delete(key);
     }
     await self.clients.claim();
   })());

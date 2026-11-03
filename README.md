@@ -16,12 +16,12 @@
 | `js/store.js` | 기기별 저장 (`localStorage` 키 `myeonghwadam.v1`) |
 | `js/app.js` | 화면/라우터 (`#/`, `#/artists`, `#/artist/:id`, `#/work/:id`, `#/puzzles`, `#/puzzle/:id`, `#/saved`, `#/about`) |
 | `sw.js` | 오프라인 캐시. 배포할 때마다 `VERSION` 올리기 |
-| `images/` | 그림(긴 변 1200px), `images/thumb/`(480px), 출처 `images/_sources.json` |
+| `images/` | 그림(긴 변 1600px, q85), `images/full/`(2800px, 확대 보기용), `images/thumb/`(600px), 출처 `images/_sources.json` |
 
 ## 작품 추가하는 법
 
 1. **저작권 확인**: 작가 사후 70년이 지난 퍼블릭 도메인 작품만. 위키미디어 공용 파일의 라이선스가 Public domain / CC0인지 확인.
-2. 이미지 저장: `images/<id>.jpg` (긴 변 1200px, `sips -Z 1200 -s formatOptions 60`), `images/thumb/<id>.jpg` (480px)
+2. 이미지 저장: 위키미디어 API로 `iiurlwidth=3840` 고해상도를 받아 PIL로 `images/<id>.jpg`(긴 변 1600, q85), `images/full/<id>.jpg`(2800, q82), `images/thumb/<id>.jpg`(600, q80) 생성 — 이미 압축된 작은 이미지를 다시 압축하면 흐려지니 꼭 큰 원본에서 만들 것
    - **받은 파일이 정말 그 그림인지 눈으로 확인할 것** (예: "Starry Night" 파일명이 「론강의 별이 빛나는 밤」인 경우가 있었음)
 3. `js/data.js`의 `WORKS`에 작품 추가, 아래쪽 `IMG`에 `[가로, 세로, 출처 URL]` 추가
    - `quiz`의 `choices`는 **첫 번째가 정답** (화면에서는 섞여 나옴)

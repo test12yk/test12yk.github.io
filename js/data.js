@@ -423,25 +423,26 @@ export const WORKS = [
   },
 ];
 
-// 이미지 경로/크기/출처 (images/_sources.json 기준)
+// 이미지 경로/크기(화면용 긴 변 1600px)/출처 (images/_sources.json 기준)
+// images/<id>.jpg 1600px q85 · images/full/<id>.jpg 2800px(확대 보기) · images/thumb/<id>.jpg 600px
 const IMG = {
-  'starry-night': [1200, 950, 'https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg'],
-  'sunflowers': [943, 1200, 'https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_Sunflowers_(1888,_National_Gallery_London).jpg'],
-  'bedroom': [1200, 952, 'https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_De_slaapkamer_-_Google_Art_Project.jpg'],
-  'impression-sunrise': [1200, 931, 'https://commons.wikimedia.org/wiki/File:Monet_-_Impression,_Sunrise.jpg'],
-  'woman-parasol': [966, 1200, 'https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg'],
-  'water-lily-bridge': [956, 1200, 'https://commons.wikimedia.org/wiki/File:Bridge_over_a_Pond_of_Water_Lilies_MET_DT1854.jpg'],
-  'pearl-earring': [1013, 1200, 'https://commons.wikimedia.org/wiki/File:1665_Girl_with_a_Pearl_Earring.jpg'],
-  'milkmaid': [1069, 1200, 'https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg'],
-  'view-of-delft': [1200, 996, 'https://commons.wikimedia.org/wiki/File:Vermeer-view-of-delft.jpg'],
-  'ssireum': [997, 1200, 'https://commons.wikimedia.org/wiki/File:Danwon_Ssireum.jpg'],
-  'seodang': [1022, 1200, 'https://commons.wikimedia.org/wiki/File:Danwon_Seodang.jpg'],
-  'mudong': [1021, 1200, 'https://commons.wikimedia.org/wiki/File:Danwon_Mudong.jpg'],
+  'starry-night': [1600, 1267, 'https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg'],
+  'sunflowers': [1259, 1600, 'https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_Sunflowers_(1888,_National_Gallery_London).jpg'],
+  'bedroom': [1600, 1270, 'https://commons.wikimedia.org/wiki/File:Vincent_van_Gogh_-_De_slaapkamer_-_Google_Art_Project.jpg'],
+  'impression-sunrise': [1600, 1241, 'https://commons.wikimedia.org/wiki/File:Monet_-_Impression,_Sunrise.jpg'],
+  'woman-parasol': [1288, 1600, 'https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Woman_with_a_Parasol_-_Madame_Monet_and_Her_Son_-_Google_Art_Project.jpg'],
+  'water-lily-bridge': [1275, 1600, 'https://commons.wikimedia.org/wiki/File:Bridge_over_a_Pond_of_Water_Lilies_MET_DT1854.jpg'],
+  'pearl-earring': [1351, 1600, 'https://commons.wikimedia.org/wiki/File:1665_Girl_with_a_Pearl_Earring.jpg'],
+  'milkmaid': [1427, 1600, 'https://commons.wikimedia.org/wiki/File:Johannes_Vermeer_-_Het_melkmeisje_-_Google_Art_Project.jpg'],
+  'view-of-delft': [1600, 1329, 'https://commons.wikimedia.org/wiki/File:Vermeer-view-of-delft.jpg'],
+  'ssireum': [1329, 1600, 'https://commons.wikimedia.org/wiki/File:Danwon_Ssireum.jpg'],
+  'seodang': [1364, 1600, 'https://commons.wikimedia.org/wiki/File:Danwon_Seodang.jpg'],
+  'mudong': [1362, 1600, 'https://commons.wikimedia.org/wiki/File:Danwon_Mudong.jpg'],
 };
 for (const w of WORKS) {
   const [width, height, source] = IMG[w.id];
   Object.assign(w, {
-    image: `images/${w.id}.jpg`, thumb: `images/thumb/${w.id}.jpg`,
+    image: `images/${w.id}.jpg`, thumb: `images/thumb/${w.id}.jpg`, zoom: `images/full/${w.id}.jpg`,
     width, height, credit: { source, license: w.id === 'water-lily-bridge' ? 'CC0' : 'Public domain' },
   });
 }

@@ -32,6 +32,7 @@ test('이미지/썸네일 파일이 모두 있다', () => {
   for (const w of WORKS) {
     assert(existsSync(join(root, w.image)), `${w.image} 없음`);
     assert(existsSync(join(root, w.thumb)), `${w.thumb} 없음`);
+    assert(existsSync(join(root, w.zoom)), `${w.zoom} 없음`);
     assert(w.width > 0 && w.height > 0, `${w.id} 크기 없음`);
     assert(/^https:\/\/commons\.wikimedia\.org\//.test(w.credit.source), `${w.id} 출처 없음`);
   }
