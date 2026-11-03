@@ -21,13 +21,21 @@ function todaysWork() {
 
 // 퍼즐 화면의 세션 상태 (새로고침하면 초기화돼도 괜찮은 것들)
 // answered: 맞힌 보기 index / wrongs: 틀린 보기들 / retryPrompt: "다시 풀기·정답 보기" 고르는 중 / revealed: 정답 보기를 누름
-const session = { question: null, answered: null, wrongs: [], retryPrompt: false, revealed: false, recent: [], fresh: -1, workTab: 'story' };
+const session = { question: null, answered: null, wrongs: [], retryPrompt: false, revealed: false, lastQ: null, fresh: -1, workTab: 'story' };
 function resetQuestion() {
   Object.assign(session, { question: null, answered: null, wrongs: [], retryPrompt: false, revealed: false, fresh: -1 });
 }
 
 // ───────── 공통 조각 ─────────
 const pieceCount = (id) => store.pieces(id).length;
+
+// 감상 순서상 다음 작품: 아직 완성 안 한 그림을 우선 (다 완성했으면 그냥 다음 그림)
+function nextWork(id) {
+  const list = readyWorks();
+  const i = list.findIndex(w => w.id === id);
+  const order = [...list.slice(i + 1), ...list.slice(0, i + 1)].filter(w => w.id !== id);
+  return order.find(w => !store.isComplete(w.id)) || order[0];
+}
 
 function puzzleBadge(id) {
   const n = pieceCount(id);
@@ -62,17 +70,18 @@ function homeView() {
   const cur = store.state.current && WORK_BY_ID[store.state.current];
   const doneCount = readyWorks().filter(w => store.isComplete(w.id)).length;
   const s = store.state.stats;
-  const continueCard = cur && !store.isComplete(cur.id)
-    ? `<a class="card continue" href="#/puzzle/${cur.id}">
-        <div class="mini-board small">${boardSvg(cur, store.pieces(cur.id), { image: cur.thumb })}</div>
-        <div><div class="eyebrow">이어서 맞추기</div><div class="h3">${pieceCount(cur.id) ? esc(cur.title) : '새 그림'}</div>
-        <div class="muted">${pieceCount(cur.id)}/${PIECES} 조각 · 문제를 맞히면 조각이 채워져요</div></div>
+  const go = cur ? (store.isComplete(cur.id) ? nextWork(cur.id) : cur) : null;
+  const continueCard = go
+    ? `<a class="card continue" href="#/work/${go.id}">
+        <div class="mini-board small">${boardSvg(go, store.pieces(go.id), { image: go.thumb })}</div>
+        <div><div class="eyebrow">이어서 감상하기</div><div class="h3">${esc(go.title)}</div>
+        <div class="muted">${esc(ARTIST_BY_ID[go.artist].name)} · 퍼즐 ${pieceCount(go.id)}/${PIECES}</div></div>
       </a>`
-    : `<a class="card continue cta" href="#/puzzles">
+    : `<div class="card continue cta">
         <div class="big-emoji">🧩</div>
-        <div><div class="eyebrow">명화 퍼즐</div><div class="h3">문제를 풀고 그림을 완성해 보세요</div>
-        <div class="muted">맞힐 때마다 퍼즐 조각이 하나씩 채워져요</div></div>
-      </a>`;
+        <div><div class="eyebrow">이렇게 즐겨요</div><div class="h3">이야기를 읽고, 퀴즈를 맞혀 퍼즐 조각을 모아요</div>
+        <div class="muted">그림마다 9문제를 맞히면 그림이 완성돼요</div></div>
+      </div>`;
 
   return `
     <section class="today">
@@ -141,7 +150,21 @@ function workView(id) {
   const prev = siblings[(i - 1 + siblings.length) % siblings.length];
   const next = siblings[(i + 1) % siblings.length];
   const n = pieceCount(w.id);
-  const puzzleLabel = n >= PIECES ? '🧩 완성한 퍼즐' : n ? `🧩 퍼즐 ${n}/${PIECES}` : '🧩 퍼즐 맞추기';
+  const complete = n >= PIECES;
+  const quizLabel = complete ? '🧩 완성한 퍼즐' : `🧩 퀴즈 풀기 ${n}/${PIECES}`;
+  const nw = nextWork(w.id);
+  const cta = complete
+    ? `<div class="card quiz-cta done">
+        <div class="mini-board small">${boardSvg(w, store.pieces(w.id), { image: w.thumb, outlines: false })}</div>
+        <div><div class="h3">이 그림 퍼즐을 완성했어요 🎉</div>
+          <a class="btn" href="#/work/${nw.id}">다음 작품: ${esc(nw.title)} →</a></div>
+      </div>`
+    : `<div class="card quiz-cta">
+        <div class="mini-board small">${boardSvg(w, store.pieces(w.id), { image: w.thumb })}</div>
+        <div><div class="h3">이야기를 다 읽었나요?</div>
+          <div class="muted">퀴즈를 맞히면 이 그림의 퍼즐 조각을 받아요 (${n}/${PIECES})</div>
+          <a class="btn" href="#/quiz/${w.id}">퀴즈 풀고 조각 받기 →</a></div>
+      </div>`;
 
   const hotspots = w.details.map((d, k) =>
     `<button class="hotspot" data-act="hotspot" data-k="${k}" style="left:${d.x}%;top:${d.y}%" aria-label="${k + 1}. ${esc(d.title)}">${k + 1}</button>`).join('');
@@ -173,13 +196,14 @@ function workView(id) {
     <div class="actions">
       <button class="btn ghost" data-act="fav" data-id="${w.id}" aria-pressed="${store.isFavorite(w.id)}">${store.isFavorite(w.id) ? '♥ 저장됨' : '♡ 저장'}</button>
       ${ttsSupported() ? `<button class="btn ghost" data-act="tts" data-id="${w.id}">🔊 이야기 듣기</button>` : ''}
-      <a class="btn" href="#/puzzle/${w.id}">${puzzleLabel}</a>
+      <a class="btn" href="#/${complete ? 'puzzle' : 'quiz'}/${w.id}">${quizLabel}</a>
     </div>
     <div class="tabs" role="tablist">
       ${[['story', '이야기'], ['details', '숨은 그림'], ['background', '배경']].map(([k, label]) =>
         `<button role="tab" aria-selected="${tab === k}" data-act="tab" data-tab="${k}">${label}</button>`).join('')}
     </div>
     <section class="tab-body">${body}</section>
+    ${cta}
     <nav class="pager">
       <a href="#/work/${prev.id}">← ${esc(prev.title)}</a>
       <a href="#/work/${next.id}">${esc(next.title)} →</a>
@@ -189,11 +213,52 @@ function workView(id) {
 function puzzlesView() {
   const list = readyWorks();
   const done = list.filter(w => store.isComplete(w.id)).length;
-  return `<p class="muted pad">문제를 맞힐 때마다 조각이 하나씩 채워져요. 9조각을 모으면 그림 완성! (${done}/${list.length} 완성)</p>
+  return `<p class="muted pad">그림마다 이야기 퀴즈 9문제를 맞히면 퍼즐이 완성돼요. (${done}/${list.length} 완성)</p>
     <div class="grid puzzles">${list.map(miniPuzzle).join('')}</div>`;
 }
 
+function boardBlock(w, { fresh = -1, small = false } = {}) {
+  const have = store.pieces(w.id);
+  const complete = have.length >= PIECES;
+  return `<div class="board-wrap${complete ? ' complete' : ''}${small ? ' small' : ''}">${boardSvg(w, have, { fresh, outlines: !complete })}</div>
+    <div class="progress${small ? ' small' : ''}"><div class="bar"><span style="width:${(have.length / PIECES) * 100}%"></span></div>
+      <span>${have.length}/${PIECES}</span>${store.state.stats.streak > 1 ? `<span class="streak">🔥 ${store.state.stats.streak}연속</span>` : ''}</div>`;
+}
+
+function completeCard(w, { justNow = false } = {}) {
+  const nw = nextWork(w.id);
+  return `<div class="card done-card">
+      <div class="big-emoji">🎉</div>
+      <h2 class="serif">「${esc(w.title)}」 완성!</h2>
+      <div class="muted">${esc(ARTIST_BY_ID[w.artist].name)} · ${esc(w.year)}</div>
+      <p>${justNow ? '9문제를 모두 맞혀 그림을 완성했어요!' : esc(w.summary)}</p>
+      <div class="actions center after-btns">
+        <a class="btn" href="#/work/${nw.id}">다음 작품: ${esc(nw.title)} →</a>
+        <a class="btn ghost" href="#/puzzles">퍼즐 모음</a>
+      </div>
+      ${justNow ? '' : `<button class="link-btn" data-act="reset-puzzle" data-id="${w.id}">이 퍼즐 처음부터 다시 맞추기</button>`}
+    </div>`;
+}
+
+// 퍼즐 개요: 진행 상황 + 이야기/퀴즈로 가는 길
 function puzzleView(id) {
+  const w = WORK_BY_ID[id];
+  if (!w || !ARTIST_BY_ID[w.artist].ready) return notFound();
+  if (store.isComplete(id)) return `${boardBlock(w)}${completeCard(w)}`;
+  const n = pieceCount(id);
+  return `${boardBlock(w)}
+    <div class="card center-card">
+      <div class="h3">${n ? esc(w.title) : '아직 비어 있는 퍼즐이에요'}</div>
+      <p class="muted">이야기를 읽고 퀴즈를 맞히면 조각이 하나씩 채워져요. ${PIECES - n}문제 남았어요.</p>
+      <div class="actions center">
+        <a class="btn ghost" href="#/work/${w.id}">이야기 읽기</a>
+        <a class="btn" href="#/quiz/${w.id}">퀴즈 풀기 →</a>
+      </div>
+    </div>`;
+}
+
+// 퀴즈: 이 그림에 대한 문제만. 맞히면 조각 획득 → 다음 작품 또는 한 문제 더
+function quizView(id) {
   const w = WORK_BY_ID[id];
   if (!w || !ARTIST_BY_ID[w.artist].ready) return notFound();
   if (store.state.current !== id) {
@@ -201,31 +266,14 @@ function puzzleView(id) {
     resetQuestion();
   }
   const have = store.pieces(id);
-  const complete = have.length >= PIECES;
+  // 방금 마지막 조각을 맞힌 경우엔 완성 축하, 들어올 때부터 완성이었다면 개요와 같은 화면
+  if (have.length >= PIECES && session.answered === null) return `${boardBlock(w)}${completeCard(w)}`;
 
-  const board = `<div class="board-wrap${complete ? ' complete' : ''}">${boardSvg(w, have, { fresh: session.fresh, outlines: !complete })}</div>
-    <div class="progress"><div class="bar"><span style="width:${(have.length / PIECES) * 100}%"></span></div>
-      <span>${have.length}/${PIECES}</span>${store.state.stats.streak > 1 ? `<span class="streak">🔥 ${store.state.stats.streak}연속</span>` : ''}</div>`;
-
-  if (complete) {
-    return `${board}
-      <div class="card done-card">
-        <div class="big-emoji">🎉</div>
-        <h2 class="serif">「${esc(w.title)}」 완성!</h2>
-        <div class="muted">${esc(ARTIST_BY_ID[w.artist].name)} · ${esc(w.year)}</div>
-        <p>${esc(w.summary)}</p>
-        <div class="actions center">
-          <a class="btn" href="#/work/${w.id}">이야기 읽기</a>
-          <a class="btn ghost" href="#/puzzles">다른 퍼즐</a>
-        </div>
-        <button class="link-btn" data-act="reset-puzzle" data-id="${w.id}">이 퍼즐 처음부터 다시 맞추기</button>
-      </div>`;
-  }
-
-  if (!session.question) session.question = nextQuestion(id, session.recent);
+  if (!session.question) session.question = nextQuestion(id, store.solved(id), session.lastQ);
   const q = session.question;
   const { answered, wrongs, retryPrompt, revealed } = session;
   const done = answered !== null || revealed;
+  const justCompleted = answered !== null && have.length >= PIECES;
   const choiceBtns = q.choices.map((c, i) => {
     let cls = '';
     if (wrongs.includes(i)) cls = ' wrong';
@@ -233,19 +281,24 @@ function puzzleView(id) {
     const disabled = done || retryPrompt || wrongs.includes(i);
     return `<button class="choice${cls}" data-act="answer" data-i="${i}" ${disabled ? 'disabled' : ''}>${esc(c)}</button>`;
   }).join('');
-  const storyLink = q.work !== id ? `<a href="#/work/${q.work}">「${esc(WORK_BY_ID[q.work].title)}」 이야기 보기</a>` : '';
-  const nextBtn = `<button class="btn wide" data-act="next">${have.length >= PIECES ? '완성된 그림 보기' : '다음 문제'}</button>`;
+
+  const nw = nextWork(id);
+  const afterBtns = `<div class="after-btns">
+      <a class="btn wide" href="#/work/${nw.id}">다음 작품: ${esc(nw.title)} →</a>
+      <button class="btn ghost wide" data-act="next">이 그림 문제 하나 더</button>
+    </div>`;
   let feedback = '';
   if (answered !== null) {
-    feedback = `<div class="feedback ok">
-        <b>${wrongs.length ? '다시 풀어서 맞혔어요! 조각 하나 획득 🧩' : '정답이에요! 조각 하나 획득 🧩'}</b>
-        <span>${esc(q.explain || '')}</span>${storyLink}
-      </div>${nextBtn}`;
+    feedback = `<div class="gain">
+        <div class="gain-title">🧩 ${wrongs.length ? '다시 풀어서 맞혔어요!' : '정답!'} 조각 획득 <b>${have.length}/${PIECES}</b></div>
+        <div class="gain-text">${esc(q.explain || '')}</div>
+      </div>
+      ${justCompleted ? completeCard(w, { justNow: true }) : afterBtns}`;
   } else if (revealed) {
     feedback = `<div class="feedback no">
         <b>정답은 "${esc(q.choices[q.answer])}"예요.</b>
-        <span>${esc(q.explain || '')}</span>${storyLink}
-      </div>${nextBtn}`;
+        <span>${esc(q.explain || '')} 이 문제는 나중에 다시 나와요.</span>
+      </div>${afterBtns}`;
   } else if (retryPrompt) {
     feedback = `<div class="feedback no"><b>아쉬워요!</b><span>다시 풀어서 맞히면 조각을 받을 수 있어요.</span></div>
       <div class="retry-btns">
@@ -256,9 +309,13 @@ function puzzleView(id) {
     feedback = '<p class="muted retry-hint">줄 그어진 답을 빼고 다시 골라 보세요.</p>';
   }
 
-  return `${board}
+  return `<div class="quiz-head">
+      <div class="quiz-board">${boardBlock(w, { fresh: session.fresh, small: true })}</div>
+      <div class="quiz-title"><div class="eyebrow">이 그림 퀴즈</div><div class="h3">${esc(w.title)}</div>
+        <div class="muted">${esc(ARTIST_BY_ID[w.artist].name)}</div>
+        <a class="link-btn" href="#/work/${w.id}">이야기 다시 보기</a></div>
+    </div>
     <section class="quiz card">
-      ${q.image ? `<img class="q-img" src="${q.image}" alt="문제 그림">` : ''}
       <div class="q-prompt">${esc(q.prompt)}</div>
       <div class="choices">${choiceBtns}</div>
       ${feedback}
@@ -301,6 +358,7 @@ const ROUTES = [
   [/^\/work\/([\w-]+)$/, (id) => [WORK_BY_ID[id]?.title || '작품', workView(id), 'artists', true]],
   [/^\/puzzles$/, () => ['퍼즐', puzzlesView(), 'puzzles']],
   [/^\/puzzle\/([\w-]+)$/, (id) => ['퍼즐', puzzleView(id), 'puzzles', true]],
+  [/^\/quiz\/([\w-]+)$/, (id) => ['퀴즈', quizView(id), 'puzzles', true]],
   [/^\/saved$/, () => ['보관함', savedView(), 'saved']],
   [/^\/about$/, () => ['앱 정보', aboutView(), 'saved', true]],
 ];
@@ -311,6 +369,7 @@ function render() {
   if (path !== lastPath) {
     stopSpeaking();
     session.workTab = 'story';
+    resetQuestion(); // 퀴즈 화면에 새로 들어오면 새 문제부터
   }
   for (const [re, fn] of ROUTES) {
     const m = path.match(re);
@@ -352,7 +411,7 @@ function openZoom(src, alt, preview = src) {
 
 // 답을 고른 뒤 아래쪽 버튼(다시 풀기/다음 문제)이 화면 밖이면 보이게 내려 준다
 function showQuizButtons() {
-  document.querySelector('.quiz .retry-btns, .quiz [data-act="next"]')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.querySelector('.quiz .retry-btns, .quiz .after-btns')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 document.addEventListener('click', (e) => {
@@ -368,13 +427,11 @@ document.addEventListener('click', (e) => {
     if (session.wrongs.includes(i)) return;
     const correct = i === session.question.answer;
     const firstTry = session.wrongs.length === 0;
-    if (firstTry) {
-      store.recordAnswer(correct); // 정답률·연속 정답은 첫 시도 기준
-      session.recent = [...session.recent, session.question.id].slice(-8);
-    }
+    if (firstTry) store.recordAnswer(correct); // 정답률·연속 정답은 첫 시도 기준
+    session.lastQ = session.question.id;
     if (correct) {
       session.answered = i;
-      session.fresh = store.addPiece(id);
+      session.fresh = store.addPiece(id, session.question.id);
     } else {
       session.wrongs.push(i);
       session.retryPrompt = true;

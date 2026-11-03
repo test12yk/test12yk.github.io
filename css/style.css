@@ -196,7 +196,7 @@ main {
 .choice.wrong { border-color: var(--no); background: var(--no-bg); color: var(--no); }
 .choice.dim { opacity: .5; }
 .choice.wrong:not(.correct) { text-decoration: line-through; }
-.quiz .retry-btns, .quiz .btn.wide { scroll-margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px); }
+.quiz .retry-btns, .quiz .after-btns { scroll-margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px); }
 .retry-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .retry-hint { margin: 10px 0 0; text-align: center; }
 .choice:disabled { cursor: default; }
@@ -209,6 +209,27 @@ main {
 .done-card { text-align: center; max-width: 520px; margin-left: auto; margin-right: auto; }
 .done-card h2 { font-size: 1.4rem; margin-top: 8px; }
 .mini-puzzle { display: block; }
+.quiz-head { display: flex; gap: 14px; align-items: center; max-width: 520px; margin: 0 auto; }
+.quiz-board { width: 46%; max-width: 220px; flex: none; }
+.quiz-title { min-width: 0; }
+.quiz-title .link-btn { margin-top: 6px; padding: 0; }
+.board-wrap.small { padding: 6px; border-radius: 10px; }
+.board-wrap.small.complete { border-width: 5px; outline-offset: -7px; padding: 0; }
+.progress.small { margin-top: 8px; font-size: .78rem; gap: 6px; }
+.progress.small .streak { display: none; }
+.gain { margin-top: 14px; padding: 12px 14px; border-radius: 12px; text-align: center; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1.5px solid var(--accent); animation: gainIn .5s ease-out; }
+.gain-title { font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+.gain-title b { font-family: var(--serif); }
+.gain-text { margin-top: 4px; font-size: .92rem; }
+@keyframes gainIn { 0% { transform: scale(.9); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.after-btns { display: flex; flex-direction: column; gap: 0; }
+.after-btns .btn.ghost { margin-top: 8px; }
+.quiz .done-card { margin: 14px 0 0; box-shadow: none; }
+.quiz-cta { display: flex; gap: 14px; align-items: center; border-color: var(--accent); }
+.quiz-cta .mini-board.small { width: 92px; flex: none; margin: 0; }
+.quiz-cta .btn { margin-top: 10px; }
+.mini-board.small { padding: 4px; }
+.center-card { text-align: center; max-width: 520px; margin-left: auto; margin-right: auto; }
 .mini-board { background: var(--surface); padding: 6px; border-radius: 10px; border: 1px solid var(--line); margin-bottom: 6px; }
 .mini-puzzle .bar { margin-top: 6px; height: 5px; }
 .grid.puzzles { margin-top: 12px; }

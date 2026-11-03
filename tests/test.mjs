@@ -63,29 +63,34 @@ test('이야기 퀴즈: 보기 4개, 중복 없음, 해설 있음', () => {
 
 test('자동 생성 문제도 모두 보기 4개, 정답 index가 맞다', () => {
   const rnd = seededRandom('t');
-  for (const w of WORKS) for (const q of questionsFor(w, { showImage: true }, rnd)) {
+  for (const w of WORKS) for (const q of questionsFor(w, rnd)) {
     assert(q.choices.length === 4 && new Set(q.choices).size === 4, `${q.id} 보기 이상: ${q.choices}`);
     assert(q.answer >= 0 && q.answer < 4, `${q.id} 정답 index 이상`);
   }
 });
 
-test('맞추는 중인 그림의 이미지는 문제에 절대 나오지 않는다', () => {
+test('작품마다 문제가 조각 수(9)와 같고, 문제 id가 겹치지 않는다', () => {
   for (const w of WORKS) {
-    const rnd = seededRandom(w.id);
-    for (let i = 0; i < 300; i++) {
-      const q = nextQuestion(w.id, [], rnd);
-      assert(!(q.kind === 'image' && q.work === w.id), `${w.id} 이미지 노출: ${q.id}`);
-    }
+    const qs = questionsFor(w);
+    assert(qs.length === PIECES, `${w.id} 문제 ${qs.length}개`);
+    assert(new Set(qs.map(q => q.id)).size === PIECES, `${w.id} 문제 id 중복`);
+    assert(new Set(qs.map(q => q.prompt)).size === PIECES, `${w.id} 같은 질문 중복`);
   }
 });
 
-test('최근 문제는 다시 나오지 않는다', () => {
-  const rnd = seededRandom('recent');
-  const recent = [];
-  for (let i = 0; i < 100; i++) {
-    const q = nextQuestion('starry-night', recent, rnd);
-    assert(!recent.includes(q.id), `반복: ${q.id}`);
-    recent.push(q.id); if (recent.length > 8) recent.shift();
+test('퀴즈는 그 작품 문제만 내고, 맞힌 문제는 다시 안 내고, 같은 문제를 연달아 안 낸다', () => {
+  const rnd = seededRandom('flow');
+  for (const w of WORKS) {
+    const solved = [];
+    let last = null;
+    for (let i = 0; i < PIECES; i++) {
+      const q = nextQuestion(w.id, solved, last, rnd);
+      assert(q.work === w.id, `${w.id}인데 ${q.work} 문제`);
+      assert(!solved.includes(q.id), `${q.id} 재출제`);
+      assert(q.id !== last || PIECES - solved.length === 1, `${q.id} 연속 출제`);
+      solved.push(q.id); last = q.id;
+    }
+    assert(solved.length === PIECES, '9문제를 다 못 풂');
   }
 });
 
@@ -121,15 +126,17 @@ test('저장소: 조각 9개를 모으면 완성 처리, 이후엔 -1', () => {
   const s = createStore(memStorage());
   const rnd = seededRandom('s');
   const got = new Set();
-  for (let i = 0; i < PIECES; i++) got.add(s.addPiece('bedroom', rnd));
+  for (let i = 0; i < PIECES; i++) got.add(s.addPiece('bedroom', `bedroom:q${i}`, rnd));
   assert(got.size === PIECES, '조각 중복');
   assert(s.isComplete('bedroom') && s.state.completed.bedroom, '완성 처리 안 됨');
-  assert(s.addPiece('bedroom', rnd) === -1, '완성 후 추가됨');
+  assert(s.solved('bedroom').length === PIECES, '맞힌 문제 기록 누락');
+  assert(s.addPiece('bedroom', 'bedroom:q9', rnd) === -1, '완성 후 추가됨');
 });
 
 test('저장소: 옛 기록(필드 누락)이나 깨진 기록도 안전하게 불러온다', () => {
   const old = createStore(memStorage({ 'myeonghwadam.v1': JSON.stringify({ pieces: { seodang: [1, 2] } }) }));
   assert(old.pieces('seodang').length === 2, '기존 조각 유실');
+  assert(Array.isArray(old.solved('seodang')) && old.solved('seodang').length === 0, 'solved 기본값 누락');
   assert(Array.isArray(old.state.favorites) && old.state.stats.best === 0, '기본값 누락');
   old.recordAnswer(true);
   assert(old.state.stats.correct === 1, '통계 기록 실패');

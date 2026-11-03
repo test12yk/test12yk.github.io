@@ -6,6 +6,7 @@ const KEY = 'myeonghwadam.v1';
 
 const defaults = () => ({
   pieces: {},      // { workId: [조각 index...] } 맞힌 순서대로
+  solved: {},      // { workId: [맞힌 문제 id...] } 맞힌 문제는 다시 안 나옴
   completed: {},   // { workId: '2026-11-03' }
   current: null,   // 지금 맞추는 퍼즐
   favorites: [],
@@ -26,6 +27,7 @@ export function createStore(storage) {
       state = { ...d, ...saved, stats: { ...d.stats, ...(saved.stats || {}) } };
       if (typeof state.pieces !== 'object' || !state.pieces) state.pieces = {};
       if (typeof state.completed !== 'object' || !state.completed) state.completed = {};
+      if (typeof state.solved !== 'object' || !state.solved) state.solved = {};
       if (!Array.isArray(state.favorites)) state.favorites = [];
     }
   } catch { /* 깨진 기록이면 새로 시작 */ }
@@ -36,11 +38,13 @@ export function createStore(storage) {
     get state() { return state; },
     save,
     pieces: (id) => state.pieces[id] || [],
+    solved: (id) => state.solved[id] || [],
     isComplete: (id) => (state.pieces[id] || []).length >= PIECES,
     setCurrent(id) { state.current = id; save(); },
 
-    // 정답 처리: 아직 없는 조각 하나를 무작위로 채운다. 채운 조각 index 반환(이미 완성이면 -1)
-    addPiece(id, rnd = Math.random) {
+    // 정답 처리: 맞힌 문제를 기록하고, 아직 없는 조각 하나를 무작위로 채운다. 채운 조각 index 반환(이미 완성이면 -1)
+    addPiece(id, questionId = null, rnd = Math.random) {
+      if (questionId && !(state.solved[id] || []).includes(questionId)) state.solved[id] = [...(state.solved[id] || []), questionId];
       const have = state.pieces[id] || [];
       const missing = [...Array(PIECES).keys()].filter(i => !have.includes(i));
       if (!missing.length) return -1;
@@ -68,6 +72,7 @@ export function createStore(storage) {
 
     resetPuzzle(id) {
       delete state.pieces[id];
+      delete state.solved[id];
       delete state.completed[id];
       save();
     },
