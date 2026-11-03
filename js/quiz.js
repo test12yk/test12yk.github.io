@@ -53,7 +53,7 @@ export function questionsFor(work, { showImage }, rnd) {
   });
   const museums = uniq(WORKS.map(w => w.museum));
   add('museum', {
-    kind: 'text', prompt: `${tj(work.title, '은/는')} 지금 어느 미술관에 있을까?`,
+    kind: 'text', prompt: `${tj(work.title, '은/는')} 지금 어디에 소장돼 있을까?`,
     ...choicesFrom(work.museum, museums, rnd),
     explain: `${work.city}의 ${work.museum}에 있어요.`,
   });

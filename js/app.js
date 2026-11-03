@@ -20,7 +20,11 @@ function todaysWork() {
 }
 
 // 퍼즐 화면의 세션 상태 (새로고침하면 초기화돼도 괜찮은 것들)
-const session = { question: null, answered: null, recent: [], fresh: -1, workTab: 'story' };
+// answered: 맞힌 보기 index / wrongs: 틀린 보기들 / retryPrompt: "다시 풀기·정답 보기" 고르는 중 / revealed: 정답 보기를 누름
+const session = { question: null, answered: null, wrongs: [], retryPrompt: false, revealed: false, recent: [], fresh: -1, workTab: 'story' };
+function resetQuestion() {
+  Object.assign(session, { question: null, answered: null, wrongs: [], retryPrompt: false, revealed: false, fresh: -1 });
+}
 
 // ───────── 공통 조각 ─────────
 const pieceCount = (id) => store.pieces(id).length;
@@ -194,7 +198,7 @@ function puzzleView(id) {
   if (!w || !ARTIST_BY_ID[w.artist].ready) return notFound();
   if (store.state.current !== id) {
     store.setCurrent(id);
-    session.question = null; session.answered = null; session.fresh = -1;
+    resetQuestion();
   }
   const have = store.pieces(id);
   const complete = have.length >= PIECES;
@@ -220,19 +224,37 @@ function puzzleView(id) {
 
   if (!session.question) session.question = nextQuestion(id, session.recent);
   const q = session.question;
-  const ans = session.answered;
+  const { answered, wrongs, retryPrompt, revealed } = session;
+  const done = answered !== null || revealed;
   const choiceBtns = q.choices.map((c, i) => {
     let cls = '';
-    if (ans !== null) cls = i === q.answer ? ' correct' : i === ans ? ' wrong' : ' dim';
-    return `<button class="choice${cls}" data-act="answer" data-i="${i}" ${ans !== null ? 'disabled' : ''}>${esc(c)}</button>`;
+    if (wrongs.includes(i)) cls = ' wrong';
+    else if (done) cls = i === q.answer ? ' correct' : ' dim';
+    const disabled = done || retryPrompt || wrongs.includes(i);
+    return `<button class="choice${cls}" data-act="answer" data-i="${i}" ${disabled ? 'disabled' : ''}>${esc(c)}</button>`;
   }).join('');
-  const feedback = ans === null ? '' : `
-    <div class="feedback ${ans === q.answer ? 'ok' : 'no'}">
-      <b>${ans === q.answer ? '정답이에요! 조각 하나 획득 🧩' : '아쉬워요!'}</b>
-      <span>${esc(q.explain || '')}</span>
-      ${q.work !== id ? `<a href="#/work/${q.work}">「${esc(WORK_BY_ID[q.work].title)}」 이야기 보기</a>` : ''}
-    </div>
-    <button class="btn wide" data-act="next">${have.length >= PIECES ? '완성된 그림 보기' : '다음 문제'}</button>`;
+  const storyLink = q.work !== id ? `<a href="#/work/${q.work}">「${esc(WORK_BY_ID[q.work].title)}」 이야기 보기</a>` : '';
+  const nextBtn = `<button class="btn wide" data-act="next">${have.length >= PIECES ? '완성된 그림 보기' : '다음 문제'}</button>`;
+  let feedback = '';
+  if (answered !== null) {
+    feedback = `<div class="feedback ok">
+        <b>${wrongs.length ? '다시 풀어서 맞혔어요! 조각 하나 획득 🧩' : '정답이에요! 조각 하나 획득 🧩'}</b>
+        <span>${esc(q.explain || '')}</span>${storyLink}
+      </div>${nextBtn}`;
+  } else if (revealed) {
+    feedback = `<div class="feedback no">
+        <b>정답은 "${esc(q.choices[q.answer])}"예요.</b>
+        <span>${esc(q.explain || '')}</span>${storyLink}
+      </div>${nextBtn}`;
+  } else if (retryPrompt) {
+    feedback = `<div class="feedback no"><b>아쉬워요!</b><span>다시 풀어서 맞히면 조각을 받을 수 있어요.</span></div>
+      <div class="retry-btns">
+        <button class="btn" data-act="retry">다시 풀기</button>
+        <button class="btn ghost" data-act="reveal">정답 보기</button>
+      </div>`;
+  } else if (wrongs.length) {
+    feedback = '<p class="muted retry-hint">줄 그어진 답을 빼고 다시 골라 보세요.</p>';
+  }
 
   return `${board}
     <section class="quiz card">
@@ -323,6 +345,11 @@ function openZoom(src, alt) {
   document.body.appendChild(el);
 }
 
+// 답을 고른 뒤 아래쪽 버튼(다시 풀기/다음 문제)이 화면 밖이면 보이게 내려 준다
+function showQuizButtons() {
+  document.querySelector('.quiz .retry-btns, .quiz [data-act="next"]')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
 document.addEventListener('click', (e) => {
   const t = e.target.closest('[data-act]');
   if (!t) return;
@@ -330,17 +357,35 @@ document.addEventListener('click', (e) => {
   const path = location.hash.replace(/^#/, '');
 
   if (act === 'answer') {
-    if (session.answered !== null) return;
+    if (session.answered !== null || session.revealed || session.retryPrompt) return;
     const id = path.split('/')[2];
     const i = Number(t.dataset.i);
-    session.answered = i;
+    if (session.wrongs.includes(i)) return;
     const correct = i === session.question.answer;
-    store.recordAnswer(correct);
-    session.fresh = correct ? store.addPiece(id) : -1;
-    session.recent = [...session.recent, session.question.id].slice(-8);
+    const firstTry = session.wrongs.length === 0;
+    if (firstTry) {
+      store.recordAnswer(correct); // 정답률·연속 정답은 첫 시도 기준
+      session.recent = [...session.recent, session.question.id].slice(-8);
+    }
+    if (correct) {
+      session.answered = i;
+      session.fresh = store.addPiece(id);
+    } else {
+      session.wrongs.push(i);
+      session.retryPrompt = true;
+    }
     render();
+    showQuizButtons();
+  } else if (act === 'retry') {
+    session.retryPrompt = false;
+    render();
+  } else if (act === 'reveal') {
+    session.retryPrompt = false;
+    session.revealed = true;
+    render();
+    showQuizButtons();
   } else if (act === 'next') {
-    session.question = null; session.answered = null; session.fresh = -1;
+    resetQuestion();
     render();
   } else if (act === 'fav') {
     store.toggleFavorite(t.dataset.id);
@@ -374,7 +419,7 @@ document.addEventListener('click', (e) => {
   } else if (act === 'reset-puzzle') {
     if (confirm('이 퍼즐을 처음부터 다시 맞출까요?')) {
       store.resetPuzzle(t.dataset.id);
-      session.question = null; session.answered = null; session.fresh = -1;
+      resetQuestion();
       render();
     }
   } else if (act === 'reset-all') {

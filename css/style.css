@@ -195,6 +195,10 @@ main {
 .choice.correct { border-color: var(--ok); background: var(--ok-bg); color: var(--ok); font-weight: 700; }
 .choice.wrong { border-color: var(--no); background: var(--no-bg); color: var(--no); }
 .choice.dim { opacity: .5; }
+.choice.wrong:not(.correct) { text-decoration: line-through; }
+.quiz .retry-btns, .quiz .btn.wide { scroll-margin-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px); }
+.retry-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.retry-hint { margin: 10px 0 0; text-align: center; }
 .choice:disabled { cursor: default; }
 .feedback { margin-top: 12px; padding: 12px 14px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
 .feedback.ok { background: var(--ok-bg); }

@@ -1,5 +1,5 @@
 // 오프라인 캐시. 코드/콘텐츠를 바꿔서 배포할 때마다 VERSION을 올릴 것.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = `mhd-shell-${VERSION}`;
 const IMAGES = 'mhd-images-v1'; // 그림은 버전과 무관하게 유지
 
