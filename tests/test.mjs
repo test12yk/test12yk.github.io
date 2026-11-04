@@ -94,6 +94,21 @@ test('퀴즈는 그 작품 문제만 내고, 맞힌 문제는 다시 안 내고,
   }
 });
 
+test('움직이는 이야기: 장면의 문단 번호와 카메라 값이 올바르다', () => {
+  for (const w of WORKS.filter(w => w.film)) {
+    const sc = w.film.scenes;
+    assert(sc.length >= 2, `${w.id} 장면 부족`);
+    for (const s of sc) {
+      for (const c of [s, s.to].filter(Boolean)) {
+        assert(c.x >= 0 && c.x <= 100 && c.y >= 0 && c.y <= 100 && c.z >= 1 && c.z <= 4, `${w.id} 카메라 값 이상: ${JSON.stringify(c)}`);
+      }
+      assert(s.title || (Number.isInteger(s.p) && w.story[s.p]), `${w.id} 없는 문단 번호: ${s.p}`);
+    }
+    const used = sc.filter(s => !s.title).map(s => s.p);
+    assert(w.story.every((_, i) => used.includes(i)), `${w.id} 빠진 이야기 문단이 있음`);
+  }
+});
+
 test('조사 붙이기', () => {
   assert(josa('고흐', '은/는') === '고흐는', josa('고흐', '은/는'));
   assert(josa('김홍도', '을/를') === '김홍도를', josa('김홍도', '을/를'));

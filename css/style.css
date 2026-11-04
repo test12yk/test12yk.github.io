@@ -236,6 +236,49 @@ main {
 .about-link { color: var(--muted); }
 .credits { padding-left: 18px; font-size: .88rem; }
 
+/* ── 움직이는 이야기 ── */
+.film-play {
+  position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); border: 0; border-radius: 999px;
+  padding: 10px 18px; min-height: 44px; background: rgba(20, 16, 10, .78); color: #fff; font-weight: 800; font-size: .95rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); white-space: nowrap;
+}
+body.film-open { overflow: hidden; }
+.film { position: fixed; inset: 0; z-index: 60; background: #0b0a09; color: #f3ead9; overflow: hidden; }
+.film-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.film-cam { position: relative; flex: none; transform-origin: center; will-change: transform; }
+.film-cam img { width: 100%; height: 100%; display: block; max-width: none; }
+.twinkle {
+  position: absolute; width: 4.5%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 252, 220, .95) 0%, rgba(255, 240, 160, .45) 35%, rgba(255, 240, 160, 0) 70%);
+  mix-blend-mode: screen; animation: twinkle 2.6s ease-in-out infinite;
+}
+.twinkle.big { width: 13%; animation-duration: 3.6s; }
+@keyframes twinkle { 0%, 100% { opacity: .15; transform: translate(-50%, -50%) scale(.8); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); } }
+.film-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 10px; padding: calc(env(safe-area-inset-top) + 10px) 12px 10px; background: linear-gradient(rgba(0, 0, 0, .55), transparent); }
+.film-dots { flex: 1; display: flex; gap: 4px; }
+.film-dots i { flex: 1; height: 3px; border-radius: 3px; background: rgba(255, 255, 255, .25); transition: background .4s; }
+.film-dots i.on { background: #e6b85c; }
+.film-btn { min-width: 44px; min-height: 44px; border-radius: 999px; border: 0; background: rgba(255, 255, 255, .12); color: #fff; font-size: 1.05rem; }
+.film-btn.main { min-width: 60px; background: #e6b85c; color: #1a1408; font-weight: 800; }
+.film-bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 12px; padding: 10px 12px calc(env(safe-area-inset-bottom) + 14px); }
+.film-caption {
+  position: absolute; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 76px); max-width: 640px; margin: 0 auto;
+  padding: 14px 16px; border-radius: 14px; background: rgba(12, 10, 8, .78); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  font-size: 1.02rem; line-height: 1.65; transition: opacity .5s;
+}
+.film-caption:empty { opacity: 0; }
+.film-title { position: absolute; left: 0; right: 0; bottom: 22%; text-align: center; opacity: 0; transform: translateY(12px); transition: opacity .9s, transform .9s; text-shadow: 0 2px 14px rgba(0, 0, 0, .8); pointer-events: none; }
+.film-title h2 { font-size: 2rem; margin: 6px 0; color: #fff; }
+.film-title .eyebrow { color: #e6b85c; }
+.film.show-title .film-title { opacity: 1; transform: none; }
+.film-end { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; padding: 24px; background: rgba(8, 6, 4, .72); }
+.film-end h2 { color: #fff; font-size: 1.5rem; }
+.film-end-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; width: min(320px, 100%); }
+.film-end .btn.ghost { color: #f3ead9; border-color: rgba(255, 255, 255, .35); }
+.film.ended .film-end { display: flex; }
+.film.ended .film-bar, .film.ended .film-caption { display: none; }
+.film.paused .film-cam .twinkle { animation-play-state: paused; }
+
 /* ── 확대 보기 ── */
 .zoom { position: fixed; inset: 0; z-index: 50; background: rgba(10, 8, 6, .94); display: flex; flex-direction: column; }
 .zoom-scroll { flex: 1; overflow: auto; display: flex; align-items: center; -webkit-overflow-scrolling: touch; }

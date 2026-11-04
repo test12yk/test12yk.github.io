@@ -3,6 +3,7 @@ import { boardSvg, PIECES } from './puzzle.js';
 import { nextQuestion } from './quiz.js';
 import { createStore } from './store.js';
 import { speakAll, stopSpeaking, ttsSupported } from './tts.js';
+import { openFilm } from './film.js';
 
 const store = createStore();
 const $view = document.getElementById('view');
@@ -180,6 +181,7 @@ function workView(id) {
     <figure class="art${tab === 'details' ? ' show-hotspots' : ''}" style="aspect-ratio:${w.width}/${w.height}">
       <img src="${w.image}" alt="${esc(w.title)}" data-act="zoom" data-full="${w.zoom}">
       ${hotspots}
+      ${w.film && tab !== 'details' ? `<button class="film-play" data-act="film" data-id="${w.id}">▶ 움직이는 이야기</button>` : ''}
     </figure>
     ${tab === 'details' ? '<div class="hs-caption" id="hs-caption">그림 위의 번호를 눌러 보세요.</div>' : ''}
     <header class="work-head">
@@ -469,6 +471,10 @@ document.addEventListener('click', (e) => {
   } else if (act === 'zoom') {
     if (session.workTab === 'details') return;
     openZoom(t.dataset.full || t.src, t.alt, t.src);
+  } else if (act === 'film') {
+    const w = WORK_BY_ID[t.dataset.id];
+    stopSpeaking();
+    openFilm(w, { onQuiz: () => { location.hash = `#/quiz/${w.id}`; } });
   } else if (act === 'tts') {
     const w = WORK_BY_ID[t.dataset.id];
     if (t.classList.toggle('playing')) {

@@ -14,6 +14,7 @@
 | `js/quiz.js` | 작품별 문제 9개(이야기 문제 6 + 자동 3) = 퍼즐 9조각. 맞힌 문제는 다시 안 나옴 |
 | `js/puzzle.js` | 직소 조각 SVG 생성/렌더링 (작품 id 시드로 모양 고정) |
 | `js/store.js` | 기기별 저장 (`localStorage` 키 `myeonghwadam.v1`) |
+| `js/film.js` | 움직이는 이야기 재생기 (작품 `film` 데이터: 장면별 카메라 x·y·z + 이야기 문단, 효과) |
 | `js/app.js` | 화면/라우터 (`#/`, `#/artists`, `#/artist/:id`, `#/work/:id`, `#/quiz/:id`, `#/puzzles`, `#/puzzle/:id`, `#/saved`, `#/about`) |
 | `sw.js` | 오프라인 캐시. 배포할 때마다 `VERSION` 올리기 |
 | `images/` | 그림(긴 변 1600px, q85), `images/full/`(2800px, 확대 보기용), `images/thumb/`(600px), 출처 `images/_sources.json` |
@@ -34,6 +35,10 @@
 ## 흐름
 
 작품 이야기 → [퀴즈 풀고 조각 받기] → 그 그림 문제 1개 → 맞히면 조각 획득 → [다음 작품](완성 안 한 다음 그림) 또는 [이 그림 문제 하나 더]. 틀리면 다시 풀기/정답 보기.
+
+## 움직이는 이야기 추가하는 법
+
+작품에 `film: { effect, scenes }`를 넣으면 작품 화면에 "▶ 움직이는 이야기" 버튼이 생김. 장면은 `{ title: true }`(오프닝) 또는 `{ p: 문단 번호, x, y, z, to? }`. 모든 이야기 문단이 한 번씩 쓰여야 테스트 통과. 지금은 「별이 빛나는 밤」만 있음.
 
 ## 저장 데이터 주의
 

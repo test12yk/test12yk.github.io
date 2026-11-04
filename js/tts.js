@@ -27,6 +27,19 @@ export function speakAll(paragraphs, onEnd) {
   });
 }
 
+// 한 문단만 읽기 (움직이는 이야기용). onEnd는 다 읽었을 때 한 번 호출
+export function speakOne(text, onEnd) {
+  if (!ttsSupported()) return false;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR';
+  if (koVoice) u.voice = koVoice;
+  u.rate = 0.95;
+  u.onend = () => onEnd?.();
+  speechSynthesis.speak(u);
+  return true;
+}
+
 export function stopSpeaking() {
   if (ttsSupported()) speechSynthesis.cancel();
 }
