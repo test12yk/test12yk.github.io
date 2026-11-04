@@ -1,5 +1,5 @@
 // 움직이는 이야기: 그림 위를 카메라가 이동하며 이야기 문단을 읽어 주는 전체 화면 재생기.
-// 작품 데이터의 film = { effect, scenes: [{ title | p, x, y, z, to? }] } 를 사용한다.
+// 작품 데이터의 film = { effects, scenes: [{ title | p, x, y, z, to? }] } 를 사용한다.
 import { ARTIST_BY_ID } from './data.js';
 import { speakOne, stopSpeaking, ttsSupported } from './tts.js';
 
@@ -7,6 +7,32 @@ const MOVE_SEC = 2.4;                       // 장면 사이 카메라 이동 �
 const readSec = (text) => Math.max(5, text.length * 0.13); // 소리 없이 볼 때 문단당 시간
 
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// 그림 위에 얹는 은은한 효과들 (그림과 함께 카메라를 따라 움직임)
+const pct = (r) => `left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%`;
+const delay = (i, span) => `animation-delay:-${((i * 0.618) % 1 * span).toFixed(2)}s`;
+function effectHtml(fx) {
+  switch (fx.type) {
+    case 'twinkle':
+      return fx.points.map(([x, y, big], i) =>
+        `<span class="twinkle${big ? ' big' : ''}" style="left:${x}%;top:${y}%;${delay(i, 2.6)}"></span>`).join('');
+    case 'glow':
+      return fx.points.map(([x, y, size], i) =>
+        `<span class="glow ${fx.color || 'warm'}" style="left:${x}%;top:${y}%;width:${size}%;${delay(i, 4)}"></span>`).join('');
+    case 'shimmer':
+      return `<div class="shimmer${fx.soft ? ' soft' : ''}" style="${pct(fx.rect)}"><i></i><i></i></div>`;
+    case 'clouds':
+      return `<div class="clouds" style="${pct(fx.rect)}">${[0, 1, 2, 3].map(i => `<i style="top:${10 + i * 21}%;${delay(i, 40)}"></i>`).join('')}</div>`;
+    case 'motes':
+      return `<div class="motes ${fx.color || 'warm'}" style="${pct(fx.rect)}">${Array.from({ length: 16 }, (_, i) =>
+        `<i style="left:${(i * 37) % 100}%;top:${(i * 53) % 100}%;${delay(i, 9)}"></i>`).join('')}</div>`;
+    case 'notes':
+      return fx.points.map(([x, y], i) =>
+        `<span class="note" style="left:${x}%;top:${y}%;${delay(i, 4.5)}">${i % 2 ? '♫' : '♪'}</span>`).join('');
+    default:
+      return '';
+  }
+}
 
 export function openFilm(work, { onQuiz } = {}) {
   const film = work.film;
@@ -20,8 +46,7 @@ export function openFilm(work, { onQuiz } = {}) {
     <div class="film-stage">
       <div class="film-cam">
         <img src="${work.image}" alt="${esc(work.title)}">
-        ${film.effect?.type === 'twinkle' ? film.effect.points.map(([x, y, big], i) =>
-          `<span class="twinkle${big ? ' big' : ''}" style="left:${x}%;top:${y}%;animation-delay:${(i * 0.37) % 2.6}s"></span>`).join('') : ''}
+        ${(film.effects || []).map(effectHtml).join('')}
       </div>
     </div>
     <div class="film-title"><div class="eyebrow">움직이는 이야기</div><h2 class="serif">${esc(work.title)}</h2><div>${esc(artist.name)} · ${esc(work.year)}</div></div>

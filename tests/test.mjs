@@ -94,8 +94,15 @@ test('퀴즈는 그 작품 문제만 내고, 맞힌 문제는 다시 안 내고,
   }
 });
 
-test('움직이는 이야기: 장면의 문단 번호와 카메라 값이 올바르다', () => {
-  for (const w of WORKS.filter(w => w.film)) {
+test('움직이는 이야기: 모든 작품에 있고, 장면·효과 값이 올바르다', () => {
+  const FX = ['twinkle', 'glow', 'shimmer', 'clouds', 'motes', 'notes'];
+  for (const w of WORKS) {
+    assert(w.film, `${w.id} 움직이는 이야기 없음`);
+    for (const fx of w.film.effects) {
+      assert(FX.includes(fx.type), `${w.id} 모르는 효과: ${fx.type}`);
+      for (const r of [fx.rect].filter(Boolean)) assert(r.length === 4 && r.every(v => v >= 0 && v <= 100), `${w.id} 효과 영역 이상`);
+      for (const [x, y] of fx.points || []) assert(x >= 0 && x <= 100 && y >= 0 && y <= 100, `${w.id} 효과 좌표 이상`);
+    }
     const sc = w.film.scenes;
     assert(sc.length >= 2, `${w.id} 장면 부족`);
     for (const s of sc) {
